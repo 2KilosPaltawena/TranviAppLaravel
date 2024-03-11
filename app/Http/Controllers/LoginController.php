@@ -3,25 +3,28 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Auth;
 use App\Models\User;
-// Importamos la fachada de Firebase
 use Kreait\Laravel\Firebase\Facades\Firebase;
 
 class LoginController extends Controller
 {
     public function login(Request $request)
     {
+        error_log(1);
         // Validación de los campos requeridos
         $validator = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
+        error_log(2);
 
         $email = $request->input('email');
         $password = $request->input('password');
-        // Obtenemos la instancia de autenticación de Firebase
+        
         $firebaseAuth = Firebase::auth();
+        error_log(3);
         try {
             // Intentamos autenticar al usuario con Firebase
             $signInResult = $firebaseAuth->signInWithEmailAndPassword($email, $password);
@@ -40,24 +43,41 @@ class LoginController extends Controller
         }
     }
 
-    public function register(Request $request)
+public function register(Request $request)
 {
-    $validator = Validator::make($request->all(), [
+    error_log(1);
+    /*$validator = Validator::make($request->all(), [
         'name' => 'required|string|max:255',
         'email' => 'required|string|email|max:255|unique:users',
         'password' => 'required|string|min:8',
+    ]);*/
+       
+    $validator = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email',
+            'password' => 'required',
+    ]);
+    error_log(2);
+
+    error_log(3);
+
+   $passwordHash = Hash::make($request->input('password'));
+
+   error_log($passwordHash);
+
+   $user = User::create([
+    'name' => $request->input('name'),
+    'email' => $request->input('email'),
+    'password' => $passwordHash,
     ]);
 
-    if ($validator->fails()) {
-        return response(['errors' => $validator->errors()->all()], 422);
-    }
-
-    $request['password'] = Hash::make($request['password']);
-    $user = User::create($request->toArray());
+    error_log(4);
 
     $token = $user->createToken('authToken')->accessToken;
 
-    return response()->json(['token' => $token], 200);
+    error_log($token);
+
+    return response()->json(['token' => $token,'email'=> $email], 200);
 }
 
 }
